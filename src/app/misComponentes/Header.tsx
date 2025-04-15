@@ -13,18 +13,25 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from "@/components/ui/menubar";
+import Link from "next/link";
 
 export function Header() {
   return (
     <Menubar>
       <MenubarMenu>
-        <MenubarTrigger>Home</MenubarTrigger>
+        <MenubarTrigger>
+          <Link href="/home">Home</Link>
+        </MenubarTrigger>
       </MenubarMenu>
       <MenubarMenu>
-        <MenubarTrigger>Juego</MenubarTrigger>
+        <MenubarTrigger>
+          <Link href="/juego">Juego</Link>
+        </MenubarTrigger>
       </MenubarMenu>
       <MenubarMenu>
-        <MenubarTrigger>Acerca</MenubarTrigger>
+        <MenubarTrigger>
+          <Link href="/acerca">Acerca</Link>
+        </MenubarTrigger>
       </MenubarMenu>
     </Menubar>
   );
