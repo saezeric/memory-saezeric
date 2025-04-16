@@ -3,8 +3,13 @@
 import * as React from "react";
 import GrupoTarjetas from "@/app/misComponentes/GrupoTarjetas";
 import { PlayIcon, RotateCwIcon, TimerIcon, TrophyIcon } from "lucide-react";
+// Importamos el hook del contador global
+import { useGlobalCounter } from "@/context/GlobalCounterContext";
 
 export default function Juego() {
+  // Obtenemos el contador global y sus funciones desde el contexto.
+  const { counter } = useGlobalCounter();
+
   const tarjetasDePrueba = [
     { nom: "Cristiano Ronaldo", imatge: "/juego/images/cristiano.png" },
     { nom: "Lionel Messi", imatge: "/juego/images/messi.png" },
@@ -36,6 +41,7 @@ export default function Juego() {
 
           {/* Estadísticas del juego */}
           <div className="flex justify-center gap-4 md:gap-8 mb-8">
+            {/* Estadística: Pares */}
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-5 py-3 rounded-xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 flex items-center gap-3 group hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors">
               <div className="p-2 bg-blue-100/80 dark:bg-blue-900/30 rounded-lg group-hover:bg-blue-200/50 dark:group-hover:bg-blue-800/40 transition-colors">
                 <TrophyIcon className="text-blue-600 dark:text-blue-400 w-5 h-5" />
@@ -50,6 +56,7 @@ export default function Juego() {
               </div>
             </div>
 
+            {/* Estadística: Tiempo */}
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-5 py-3 rounded-xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 flex items-center gap-3 group hover:bg-purple-50/50 dark:hover:bg-purple-900/20 transition-colors">
               <div className="p-2 bg-purple-100/80 dark:bg-purple-900/30 rounded-lg group-hover:bg-purple-200/50 dark:group-hover:bg-purple-800/40 transition-colors">
                 <TimerIcon className="text-purple-600 dark:text-purple-400 w-5 h-5" />
@@ -64,6 +71,7 @@ export default function Juego() {
               </div>
             </div>
 
+            {/* Estadística: Intentos (Contador Global) */}
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-5 py-3 rounded-xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 flex items-center gap-3 group hover:bg-green-50/50 dark:hover:bg-green-900/20 transition-colors">
               <div className="p-2 bg-green-100/80 dark:bg-green-900/30 rounded-lg group-hover:bg-green-200/50 dark:group-hover:bg-green-800/40 transition-colors">
                 <PlayIcon className="text-green-600 dark:text-green-400 w-5 h-5" />
@@ -72,8 +80,9 @@ export default function Juego() {
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Intentos
                 </p>
+                {/* Se muestra el contador global en vez de un valor estático */}
                 <p className="font-bold text-lg text-green-600 dark:text-green-400">
-                  0
+                  {counter}
                 </p>
               </div>
             </div>
@@ -82,6 +91,8 @@ export default function Juego() {
 
         {/* Área de juego */}
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 md:p-8 mb-10 transform transition-all hover:shadow-2xl">
+          {/* Aquí se supone que "GrupoTarjetas" renderiza cada tarjeta individual,
+              preferentemente utilizando un componente que implemente un contador local con useState (por ejemplo, "CounterCard") */}
           <GrupoTarjetas tarjetas={tarjetasDePrueba} />
         </div>
 

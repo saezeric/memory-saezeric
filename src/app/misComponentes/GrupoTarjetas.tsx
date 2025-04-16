@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import Tarjeta, { TarjetaProps } from "@/app/misComponentes/Tarjeta";
 
