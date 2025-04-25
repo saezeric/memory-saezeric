@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import CounterCard from "@/app/misComponentes/CounterCard"; // Importa el componente de contador de cartas
+import CounterCard from "@/app/misComponentes/CounterCard";
 
 // Definimos la interfaz de cada carta, incluyendo el contador individual
 export interface Card {
@@ -18,10 +18,12 @@ interface GrupoTarjetasProps {
   onCardClick: (card: Card) => void;
 }
 
-const GrupoTarjetas: React.FC<GrupoTarjetasProps> = ({
+// Componente de grupo de tarjetas sin usar React.FC
+export default function GrupoTarjetas({
+  // Desestructuramos las props para no enviar datos como props.cards y props.onCardClick
   cards,
   onCardClick,
-}) => {
+}: GrupoTarjetasProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
       {cards.map((card) => (
@@ -69,6 +71,4 @@ const GrupoTarjetas: React.FC<GrupoTarjetasProps> = ({
       ))}
     </div>
   );
-};
-
-export default GrupoTarjetas;
+}
