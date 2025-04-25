@@ -20,7 +20,8 @@ const GrupoTarjetas: React.FC<GrupoTarjetasProps> = ({
   onCardClick,
 }) => {
   return (
-    <div className="grid grid-cols-3 gap-6">
+    // Ahora en desktop (md y superior) mostraremos 4 columnas en lugar de 3
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
       {cards.map((card) => (
         <div
           key={card.id}
@@ -28,9 +29,7 @@ const GrupoTarjetas: React.FC<GrupoTarjetasProps> = ({
           className="flip-container"
           style={{ perspective: "1000px" }}
         >
-          {/* El contenedor interno "flipper" rota según el estado de la carta.
-              Cuando no está volteada, se le aplica rotateY(180deg) para mostrar la cara trasera,
-              la cual tendrá un fondo opaco que oculta cualquier pista */}
+          {/* El contenedor interno rota según el estado de la carta. */}
           <div
             className="flipper relative w-full h-56 transition-transform duration-600"
             style={{
@@ -41,7 +40,7 @@ const GrupoTarjetas: React.FC<GrupoTarjetasProps> = ({
                   : "rotateY(180deg)",
             }}
           >
-            {/* Cara frontal: contiene la imagen del jugador */}
+            {/* Cara de adelante que contiene la imagen del jugador */}
             <div
               className="front absolute w-full h-full flex items-center justify-center"
               style={{
@@ -55,8 +54,7 @@ const GrupoTarjetas: React.FC<GrupoTarjetasProps> = ({
                 className="object-contain max-h-52 max-w-[95%] transition duration-300"
               />
             </div>
-            {/* Cara trasera: se muestra cuando la carta NO está volteada.
-                Tiene fondo sólido para que no se vea nada de la imagen de la cara frontal */}
+            {/* Cara trasera: se muestra cuando la carta no esta girada. */}
             <div
               className="back absolute w-full h-full flex items-center justify-center bg-[#1f2937]"
               style={{
