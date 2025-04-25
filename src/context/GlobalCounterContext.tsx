@@ -1,38 +1,38 @@
 // context/GlobalCounterContext.tsx
 "use client";
 
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, ReactNode } from "react";
 
-// Definición de la interfaz para tipar el contexto
+// Interfaz del contexto con solo el contador total y la función para incrementarlo
 interface GlobalCounterContextType {
-  counter: number;
-  increment: () => void;
-  decrement: () => void;
+  totalClicks: number;
+  incrementTotal: () => void;
 }
 
-// Creamos el contexto con un valor inicial undefined
+// Creamos el contexto, inicialmente undefined
 const GlobalCounterContext = createContext<
   GlobalCounterContextType | undefined
 >(undefined);
 
+// Provider que envuelve la app y gestiona el total de clics
 export const GlobalCounterProvider = ({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) => {
-  const [counter, setCounter] = useState<number>(0);
+  const [totalClicks, setTotalClicks] = useState(0);
 
-  const increment = () => setCounter((prev) => prev + 1);
-  const decrement = () => setCounter((prev) => prev - 1);
+  // Sólo incrementamos el contador global
+  const incrementTotal = () => setTotalClicks((prev) => prev + 1);
 
   return (
-    <GlobalCounterContext.Provider value={{ counter, increment, decrement }}>
+    <GlobalCounterContext.Provider value={{ totalClicks, incrementTotal }}>
       {children}
     </GlobalCounterContext.Provider>
   );
 };
 
-// Hook para facilitar el uso del contexto
+// Hook para acceder al contexto, lanzará error si no está dentro del Provider
 export const useGlobalCounter = () => {
   const context = useContext(GlobalCounterContext);
   if (!context) {

@@ -1,34 +1,22 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/CounterCard.tsx
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { useGlobalCounter } from "@/context/GlobalCounterContext";
 
 interface CounterCardProps {
-  title: string;
+  // Recibe cuántos clics tiene esta carta
+  localClicks: number;
 }
 
-const CounterCard = ({ title }: CounterCardProps) => {
-  // Estado local para el contador individual
-  const [localCounter, setLocalCounter] = useState(0);
-
+// Muestra sólo el contador de clics para una carta específica
+const CounterCard = ({ localClicks }: CounterCardProps) => {
   return (
-    <div className="p-4 border rounded shadow">
-      <h2 className="text-lg font-bold mb-2">{title}</h2>
-      <p className="mb-2">Contador individual: {localCounter}</p>
-      <div className="flex space-x-2">
-        <button
-          className="px-3 py-1 bg-blue-500 text-white rounded"
-          onClick={() => setLocalCounter(localCounter + 1)}
-        >
-          Incrementar
-        </button>
-        <button
-          className="px-3 py-1 bg-red-500 text-white rounded"
-          onClick={() => setLocalCounter(localCounter - 1)}
-        >
-          Decrementar
-        </button>
-      </div>
+    <div className="absolute top-2 right-2 bg-white/80 dark:bg-gray-800/80 px-2 py-1 rounded-full shadow">
+      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        {localClicks}
+      </p>
     </div>
   );
 };
