@@ -1,13 +1,16 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
+import CounterCard from "@/app/misComponentes/CounterCard"; // Importa el componente de contador de cartas
 
+// Definimos la interfaz de cada carta, incluyendo el contador individual
 export interface Card {
   nom: string;
   imatge: string;
   id: number;
   flipped: boolean;
   matched: boolean;
+  localClicks: number; // Clics en esta carta
 }
 
 interface GrupoTarjetasProps {
@@ -20,19 +23,16 @@ const GrupoTarjetas: React.FC<GrupoTarjetasProps> = ({
   onCardClick,
 }) => {
   return (
-    <div className="grid grid-cols-3 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
       {cards.map((card) => (
         <div
           key={card.id}
           onClick={() => onCardClick(card)}
-          className="flip-container"
-          style={{ perspective: "1000px" }}
+          className="relative cursor-pointer rounded-xl overflow-hidden shadow-lg"
+          style={{ perspective: "800px" }}
         >
-          {/* El contenedor interno "flipper" rota según el estado de la carta.
-              Cuando no está volteada, se le aplica rotateY(180deg) para mostrar la cara trasera,
-              la cual tendrá un fondo opaco que oculta cualquier pista */}
           <div
-            className="flipper relative w-full h-56 transition-transform duration-600"
+            className="flipper w-full h-56 transition-transform duration-500"
             style={{
               transformStyle: "preserve-3d",
               transform:
@@ -41,33 +41,30 @@ const GrupoTarjetas: React.FC<GrupoTarjetasProps> = ({
                   : "rotateY(180deg)",
             }}
           >
-            {/* Cara frontal: contiene la imagen del jugador */}
+            {/* Frente de la carta: imagen del jugador */}
             <div
               className="front absolute w-full h-full flex items-center justify-center"
-              style={{
-                backfaceVisibility: "hidden",
-                WebkitBackfaceVisibility: "hidden",
-              }}
+              style={{ backfaceVisibility: "hidden" }}
             >
               <img
                 src={card.imatge}
                 alt={card.nom}
-                className="object-contain max-h-52 max-w-[95%] transition duration-300"
+                className="object-contain max-h-52 max-w-[95%]"
               />
             </div>
-            {/* Cara trasera: se muestra cuando la carta NO está volteada.
-                Tiene fondo sólido para que no se vea nada de la imagen de la cara frontal */}
+            {/* Reverso de la carta: oculta la imagen */}
             <div
-              className="back absolute w-full h-full flex items-center justify-center bg-[#1f2937]"
+              className="back absolute w-full h-full flex items-center justify-center bg-gray-700"
               style={{
                 backfaceVisibility: "hidden",
-                WebkitBackfaceVisibility: "hidden",
                 transform: "rotateY(180deg)",
               }}
             >
               <span className="text-white text-4xl font-bold">?</span>
             </div>
           </div>
+          {/* Contador individual encima de la carta */}
+          <CounterCard localClicks={card.localClicks} />
         </div>
       ))}
     </div>
