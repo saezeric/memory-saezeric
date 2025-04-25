@@ -7,6 +7,7 @@ import { useState, useEffect } from "react"; // Importa hooks de estado y efecto
 import GrupoTarjetas, { Card } from "@/app/misComponentes/GrupoTarjetas"; // Importa componente de tarjetas y su tipo
 import { PlayIcon, RotateCwIcon, TimerIcon, TrophyIcon } from "lucide-react"; // Importa iconos
 import { useGlobalCounter } from "@/context/GlobalCounterContext"; // Hook para contador global
+import GlobalCounter from "../misComponentes/GlobalCounter";
 
 export default function Juego() {
   // Datos base de las cartas (sin estado)
@@ -20,6 +21,10 @@ export default function Juego() {
   ];
 
   // Extendemos Card para incluir contador local
+
+  // Esto esta haciendo varias cosas:
+  // 1. La primera es que cada carta que este presente dentro del juego, si o si tiene que tener un localClicks, por lo que sirve a modo de refuerzo
+  // 2. Si construimos alguna carta sin localClicks, TypeScript nos va a dar un error
   interface CardType extends Card {
     localClicks: number;
   }
@@ -177,17 +182,7 @@ export default function Juego() {
             </div>
           </div>
           {/* Intentos globales */}
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-5 py-3 rounded-xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 flex items-center gap-3">
-            <PlayIcon className="w-5 h-5 text-green-600 dark:text-green-400" />
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Intentos
-              </p>
-              <p className="font-bold text-lg text-green-600 dark:text-green-400">
-                {totalClicks}
-              </p>
-            </div>
-          </div>
+          <GlobalCounter />
         </div>
         {/* Mensaje de fin de partida */}
         {score === tarjetasDePrueba.length ? (

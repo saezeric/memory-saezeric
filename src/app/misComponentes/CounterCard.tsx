@@ -10,7 +10,7 @@ interface CounterCardProps {
   localClicks: number;
 }
 
-// Muestra sólo el contador de clics para una carta específica
+// Muestra sólo el contador de clics para una carta específica y se destructura localClicks de CounterCardProps
 const CounterCard = ({ localClicks }: CounterCardProps) => {
   return (
     <div className="absolute top-2 right-2 bg-white/80 dark:bg-gray-800/80 px-2 py-1 rounded-full shadow">
