@@ -3,10 +3,11 @@
 
 import React, { createContext, useState, useContext, ReactNode } from "react";
 
-// Interfaz del contexto con solo el contador total y la función para incrementarlo
+// Interfaz ampliada con resetTotal
 interface GlobalCounterContextType {
   totalClicks: number;
   incrementTotal: () => void;
+  resetTotal: () => void; // <-- añadimos aquí
 }
 
 // Creamos el contexto, inicialmente undefined
@@ -22,17 +23,21 @@ export const GlobalCounterProvider = ({
 }) => {
   const [totalClicks, setTotalClicks] = useState(0);
 
-  // Sólo incrementamos el contador global
+  // Incrementa el contador global
   const incrementTotal = () => setTotalClicks((prev) => prev + 1);
+  // Reinicia el contador global a cero
+  const resetTotal = () => setTotalClicks(0);
 
   return (
-    <GlobalCounterContext.Provider value={{ totalClicks, incrementTotal }}>
+    <GlobalCounterContext.Provider
+      value={{ totalClicks, incrementTotal, resetTotal }}
+    >
       {children}
     </GlobalCounterContext.Provider>
   );
 };
 
-// Hook para acceder al contexto, lanzará error si no está dentro del Provider
+// Hook para acceder al contexto
 export const useGlobalCounter = () => {
   const context = useContext(GlobalCounterContext);
   if (!context) {
