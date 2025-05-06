@@ -3,7 +3,7 @@
 "use client"; // Marca este componente para que se renderice en el cliente
 
 import * as React from "react"; // Importa React completo
-import { useState, useEffect } from "react"; // Importa hooks de estado y efecto
+import { useState, useEffect, useCallback } from "react"; // Importa hooks de estado y efecto
 import GrupoTarjetas, { Card } from "@/app/misComponentes/GrupoTarjetas"; // Importa componente de tarjetas y su tipo
 import { PlayIcon, RotateCwIcon, TimerIcon, TrophyIcon } from "lucide-react"; // Importa iconos
 import { useGlobalCounter } from "@/context/GlobalCounterContext"; // Hook para contador global
@@ -27,40 +27,55 @@ export default function Juego() {
   // Contador global de clics
   const { totalClicks, incrementTotal } = useGlobalCounter();
 
-  // Función para cargar y preparar el mazo de Pokémon
+  // --- TIPOS PARA API DE POKEAPI ---
+  interface PokemonCountResponse {
+    count: number;
+  }
+  interface PokemonResponse {
+    name: string;
+    sprites: {
+      front_default: string | null;
+      other: {
+        "official-artwork": { front_default: string | null };
+      };
+    };
+  }
+
   // Función auxiliar para obtener un Pokémon válido
-  const getRandomPokemon = async (count: number): Promise<any> => {
+  const getRandomPokemon = async (count: number): Promise<PokemonResponse> => {
     while (true) {
       const id = Math.floor(Math.random() * count) + 1;
       const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
       if (res.ok) {
         return res.json();
       }
-      // Si responde 404, probamos otro id
     }
   };
 
   // Función para cargar y preparar el mazo de Pokémon
-  const fetchDeck = async () => {
+  const fetchDeck = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Obtener número total de pokémons para un rango dinámico
+      // 1. Obtener número total de pokémons
       const resCount = await fetch("https://pokeapi.co/api/v2/pokemon?limit=0");
-      const { count } = resCount.ok ? await resCount.json() : { count: 898 }; // fallback si hay error
+      const { count } = resCount.ok
+        ? ((await resCount.json()) as PokemonCountResponse)
+        : { count: 898 };
 
-      // 2. Promesas para 6 pokémons aleatorios válidos
-      const promises = Array.from({ length: NUM_CARDS }).map(() =>
-        getRandomPokemon(count)
-      );
+      // 2. Crear promesas para 6 pokémons aleatorios
+      const promises: Promise<PokemonResponse>[] = Array.from({
+        length: NUM_CARDS,
+      }).map(() => getRandomPokemon(count));
 
-      // 3. Esperar todas las respuestas y procesar
+      // 3. Esperar todas las respuestas
       const pokemons = await Promise.all(promises);
 
-      // 4. Construir y duplicar cartas, usando la imagen oficial o frontal
-      const deck: Card[] = pokemons.flatMap((p: any) => {
+      // 4. Construir y duplicar cartas
+      const deck: Card[] = pokemons.flatMap((p) => {
         const sprite =
-          p.sprites.other["official-artwork"].front_default ||
-          p.sprites.front_default;
+          p.sprites.other["official-artwork"].front_default ??
+          p.sprites.front_default ??
+          "";
         return [
           {
             nom: p.name,
@@ -81,7 +96,7 @@ export default function Juego() {
         ];
       });
 
-      // 5. Barajar con Fisher-Yates
+      // 5. Barajar con Fisher–Yates
       for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -92,30 +107,59 @@ export default function Juego() {
     } catch (error) {
       console.error("Error cargando Pokémons:", error);
     } finally {
-      setLoading(false); // Quitar mensaje de carga
+      setLoading(false);
     }
-  };
+  }, [NUM_CARDS]);
 
   // Al montar y al reiniciar, cargar nuevo mazo
   useEffect(() => {
     fetchDeck();
-  }, []);
+  }, [fetchDeck]);
 
   // Temporizador: decrementa cada segundo, se detiene al acabar partida o mientras carga
   useEffect(() => {
-    // No iniciar el tiempo hasta que el mazo esté cargado
-    if (loading) return;
-    // Detener si el tiempo llegó a cero o si hemos ganado todas las parejas
-    if (timeLeft <= 0 || score === NUM_CARDS) return;
+    if (loading) return; // no iniciar hasta tener mazo
+    if (timeLeft <= 0 || score === NUM_CARDS) return; // fin de partida
     const timer = setInterval(() => setTimeLeft((t) => t - 1), 1000);
-    return () => clearInterval(timer); // Limpia intervalo
+    return () => clearInterval(timer); // limpiar al desmontar o cambiar deps
   }, [loading, timeLeft, score]);
+
+  // Comparar dos cartas seleccionadas
+  useEffect(() => {
+    if (!firstCard || !secondCard) return;
+    setIsChecking(true);
+    if (firstCard.nom === secondCard.nom) {
+      setCards((prev) =>
+        prev.map((c) => (c.nom === firstCard.nom ? { ...c, matched: true } : c))
+      );
+      setScore((s) => s + 1);
+      resetTurn();
+    } else {
+      setTimeout(() => {
+        setCards((prev) =>
+          prev.map((c) =>
+            c.id === firstCard.id || c.id === secondCard.id
+              ? { ...c, flipped: false }
+              : c
+          )
+        );
+        resetTurn();
+      }, 1000);
+    }
+  }, [firstCard, secondCard]);
+
+  // Reinicia la selección de cartas
+  const resetTurn = () => {
+    setFirstCard(null);
+    setSecondCard(null);
+    setIsChecking(false);
+  };
 
   // Maneja clic en carta: voltear, contar local y global
   const handleCardClick = (clicked: Card) => {
     if (isChecking || clicked.flipped || clicked.matched || timeLeft <= 0)
       return;
-    incrementTotal(); // Sumar al total global
+    incrementTotal(); // sumar al total global
     setCards((prev) =>
       prev.map((c) =>
         c.id === clicked.id
@@ -123,7 +167,6 @@ export default function Juego() {
           : c
       )
     );
-    // Guardar primera o segunda carta para comparar
     if (!firstCard)
       setFirstCard({
         ...clicked,
