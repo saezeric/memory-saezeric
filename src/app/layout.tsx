@@ -1,7 +1,7 @@
 // app/layout.tsx
-
 import "./globals.css";
 import { GlobalCounterProvider } from "@/context/GlobalCounterContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { Header } from "./misComponentes/Header";
 
 export const metadata = {
@@ -11,16 +11,18 @@ export const metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="es">
       <body>
-        <GlobalCounterProvider>
-          <Header />
-          <main>{children}</main>
-        </GlobalCounterProvider>
+        <AuthProvider>
+          <GlobalCounterProvider>
+            <Header />
+            <main>{children}</main>
+          </GlobalCounterProvider>
+        </AuthProvider>
       </body>
     </html>
   );
