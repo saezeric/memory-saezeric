@@ -44,10 +44,9 @@ export default function Juego() {
   const fetchDeck = async () => {
     setLoading(true);
     try {
-      // 1. Obtener número total de pokémons que hay en la pokeapi
-      // si por algun casual, la peticion fetch de cuantos pokemons hay falla, ponemos nosotros un limite que será el 898 para poder jugar
+      // 1. Obtener número total de pokémons para un rango dinámico
       const resCount = await fetch("https://pokeapi.co/api/v2/pokemon?limit=0");
-      const { count } = resCount.ok ? await resCount.json() : { count: 898 };
+      const { count } = resCount.ok ? await resCount.json() : { count: 898 }; // fallback si hay error
 
       // 2. Promesas para 6 pokémons aleatorios válidos
       const promises = Array.from({ length: NUM_CARDS }).map(() =>
@@ -102,45 +101,15 @@ export default function Juego() {
     fetchDeck();
   }, []);
 
-  // Temporizador: decrementa cada segundo, se detiene al acabar partida
+  // Temporizador: decrementa cada segundo, se detiene al acabar partida o mientras carga
   useEffect(() => {
+    // No iniciar el tiempo hasta que el mazo esté cargado
+    if (loading) return;
+    // Detener si el tiempo llegó a cero o si hemos ganado todas las parejas
     if (timeLeft <= 0 || score === NUM_CARDS) return;
     const timer = setInterval(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearInterval(timer); // Limpia intervalo
-  }, [timeLeft, score]);
-
-  // Comparar dos cartas seleccionadas
-  useEffect(() => {
-    if (!firstCard || !secondCard) return;
-    setIsChecking(true); // Evita más clics
-    if (firstCard.nom === secondCard.nom) {
-      // Si coinciden, marcarlas aparejadas
-      setCards((prev) =>
-        prev.map((c) => (c.nom === firstCard.nom ? { ...c, matched: true } : c))
-      );
-      setScore((s) => s + 1); // Sumar punto
-      resetTurn();
-    } else {
-      // Si no coinciden, esperar y volver a ocultar
-      setTimeout(() => {
-        setCards((prev) =>
-          prev.map((c) =>
-            c.id === firstCard.id || c.id === secondCard.id
-              ? { ...c, flipped: false }
-              : c
-          )
-        );
-        resetTurn();
-      }, 1000);
-    }
-  }, [firstCard, secondCard]);
-
-  // Reinicia selección de cartas
-  const resetTurn = () => {
-    setFirstCard(null);
-    setSecondCard(null);
-    setIsChecking(false);
-  };
+  }, [loading, timeLeft, score]);
 
   // Maneja clic en carta: voltear, contar local y global
   const handleCardClick = (clicked: Card) => {
