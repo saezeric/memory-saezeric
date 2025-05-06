@@ -25,7 +25,7 @@ export default function Juego() {
   const [isChecking, setIsChecking] = useState<boolean>(false); // Bloquea más clics mientras se compara
 
   // Contador global de clics
-  const { totalClicks, incrementTotal } = useGlobalCounter();
+  const { totalClicks, incrementTotal, resetTotal } = useGlobalCounter();
 
   // --- TIPOS PARA API DE POKEAPI ---
   interface PokemonCountResponse {
@@ -185,6 +185,7 @@ export default function Juego() {
   const resetGame = () => {
     setScore(0);
     setTimeLeft(20);
+    resetTotal(); // Reinicia contador de clics global
     fetchDeck();
   };
 
