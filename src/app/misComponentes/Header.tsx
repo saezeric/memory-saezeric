@@ -1,3 +1,4 @@
+// components/ui/Header.tsx
 "use client";
 
 import {
@@ -8,10 +9,10 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext"; // Asegúrate de que esta ruta coincide
+import { useAuth } from "@/context/AuthContext";
 
 export function Header() {
-  const { user, logout } = useAuth(); // Obtenemos info de usuario y acción de logout
+  const { user, logout } = useAuth();
 
   return (
     <Menubar>
@@ -20,20 +21,17 @@ export function Header() {
           <Link href="/home">Home</Link>
         </MenubarTrigger>
       </MenubarMenu>
-
       <MenubarMenu>
         <MenubarTrigger>
           <Link href="/juego">Juego</Link>
         </MenubarTrigger>
       </MenubarMenu>
-
       <MenubarMenu>
         <MenubarTrigger>
           <Link href="/partidas">Partidas</Link>
         </MenubarTrigger>
       </MenubarMenu>
 
-      {/* Solo mostrar Login/Registro si NO hay usuario */}
       {!user && (
         <>
           <MenubarMenu>
@@ -49,12 +47,9 @@ export function Header() {
         </>
       )}
 
-      {/* Si hay usuario conectado, mostramos un Menú con su nombre y opción de Logout */}
       {user && (
         <MenubarMenu>
-          <MenubarTrigger>
-            {user.email /* o el campo que uses para mostrar su nombre */}
-          </MenubarTrigger>
+          <MenubarTrigger>{user.name}</MenubarTrigger>
           <MenubarContent>
             <MenubarItem onSelect={logout}>Cerrar sesión</MenubarItem>
           </MenubarContent>
