@@ -29,7 +29,7 @@ export function Header() {
 
       <MenubarMenu>
         <MenubarTrigger>
-          <Link href="/acerca">Acerca</Link>
+          <Link href="/partidas">Partidas</Link>
         </MenubarTrigger>
       </MenubarMenu>
 
