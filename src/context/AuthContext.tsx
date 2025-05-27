@@ -9,77 +9,96 @@ import React, {
   useEffect,
 } from "react";
 
-// Ahora el usuario lleva también un username
 interface User {
-  username: string;
+  id: number;
+  name: string;
   email: string;
-  password: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  register: (
-    username: string,
-    email: string,
-    password: string
-  ) => Promise<void>;
-  login: (identifier: string, password: string) => Promise<void>;
-  logout: () => void;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
+
+const API_BASE = "https://m7-laravel-saezeric-production.up.railway.app/api";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
+  // Al montar, si hay token, recupera usuario
   useEffect(() => {
-    const stored = localStorage.getItem("currentUser");
-    if (stored) setUser(JSON.parse(stored));
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    fetch(`${API_BASE}/me`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("No autorizado");
+        const json = await res.json();
+        setUser(json.data);
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+        setUser(null);
+      });
   }, []);
 
-  const register = async (
-    username: string,
-    email: string,
-    password: string
-  ) => {
-    const stored = localStorage.getItem("users");
-    const users: User[] = stored ? JSON.parse(stored) : [];
-
-    // ningún usuario existente con el mismo email o username
-    if (users.find((u) => u.email === email)) {
-      throw new Error("Ese email ya está registrado.");
+  const register = async (name: string, email: string, password: string) => {
+    const res = await fetch(`${API_BASE}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        password_confirmation: password,
+        role: "user",
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Error al registrar usuario");
     }
-    if (users.find((u) => u.username === username)) {
-      throw new Error("Ese nombre de usuario ya existe.");
-    }
-
-    const newUser: User = { username, email, password };
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("currentUser", JSON.stringify(newUser));
-    setUser(newUser);
+    // No guardamos token ni seteamos user: redirigiremos al login
   };
 
-  const login = async (identifier: string, password: string) => {
-    const stored = localStorage.getItem("users");
-    const users: User[] = stored ? JSON.parse(stored) : [];
-
-    // buscamos por email o username
-    const found = users.find(
-      (u) =>
-        (u.email === identifier || u.username === identifier) &&
-        u.password === password
-    );
-    if (!found) {
-      throw new Error("Credenciales incorrectas.");
+  const login = async (email: string, password: string) => {
+    const res = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Error al iniciar sesión");
     }
-
-    localStorage.setItem("currentUser", JSON.stringify(found));
-    setUser(found);
+    const json = await res.json();
+    localStorage.setItem("token", json.token);
+    // Obtener datos de usuario
+    const meRes = await fetch(`${API_BASE}/me`, {
+      headers: { Authorization: `Bearer ${json.token}` },
+    });
+    if (!meRes.ok) throw new Error("Error al obtener usuario tras login");
+    const meJson = await meRes.json();
+    setUser(meJson.data);
   };
 
-  const logout = () => {
-    localStorage.removeItem("currentUser");
+  const logout = async () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      await fetch(`${API_BASE}/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+    localStorage.removeItem("token");
     setUser(null);
   };
 

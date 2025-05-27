@@ -19,7 +19,6 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
 
-    // validaciones
     if (!name || !email || !password || !confirm) {
       setError("Todos los campos son obligatorios.");
       return;
@@ -30,12 +29,10 @@ export default function RegisterPage() {
     }
 
     try {
-      // ahora pasamos name también
       await register(name, email, password);
-      router.push("/login");
+      router.push("/login"); // redirige al login tras registro
     } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-      else setError("Error desconocido al registrar.");
+      setError(err instanceof Error ? err.message : "Error desconocido.");
     }
   };
 
@@ -44,6 +41,7 @@ export default function RegisterPage() {
       <h1 className="text-2xl font-bold mb-4">Registro</h1>
       {error && <div className="mb-4 text-red-600">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* campo Nombre */}
         <div>
           <label className="block text-sm font-medium mb-1">Nombre</label>
           <input
@@ -54,6 +52,7 @@ export default function RegisterPage() {
             required
           />
         </div>
+        {/* campo Email */}
         <div>
           <label className="block text-sm font-medium mb-1">Email</label>
           <input
@@ -64,6 +63,7 @@ export default function RegisterPage() {
             required
           />
         </div>
+        {/* campo Contraseña */}
         <div>
           <label className="block text-sm font-medium mb-1">Contraseña</label>
           <input
@@ -74,6 +74,7 @@ export default function RegisterPage() {
             required
           />
         </div>
+        {/* campo Confirmación */}
         <div>
           <label className="block text-sm font-medium mb-1">
             Confirmar contraseña
