@@ -9,7 +9,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
 
-  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -20,7 +20,7 @@ export default function RegisterPage() {
     setError(null);
 
     // validaciones
-    if (!username || !email || !password || !confirm) {
+    if (!name || !email || !password || !confirm) {
       setError("Todos los campos son obligatorios.");
       return;
     }
@@ -30,8 +30,8 @@ export default function RegisterPage() {
     }
 
     try {
-      // ahora pasamos username también
-      await register(username, email, password);
+      // ahora pasamos name también
+      await register(name, email, password);
       router.push("/login");
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
@@ -45,14 +45,12 @@ export default function RegisterPage() {
       {error && <div className="mb-4 text-red-600">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">
-            Nombre de usuario
-          </label>
+          <label className="block text-sm font-medium mb-1">Nombre</label>
           <input
             type="text"
             className="w-full border px-3 py-2 rounded"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             required
           />
         </div>
