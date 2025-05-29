@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
+
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PlayIcon, ListIcon, Github } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import Glow from "@/components/ui/glow";
-import { siteConfig } from "@/config/site";
+import Link from "next/link"; // <-- Importa Link
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +52,7 @@ export default function Hero({
       icon: <PlayIcon className="mr-2 size-5" />,
     },
     {
-      href: "/acerca",
+      href: "/partidas",
       text: "Mis Partidas",
       variant: "outline",
       icon: <ListIcon className="mr-2 size-5" />,
@@ -82,15 +83,17 @@ export default function Hero({
               {buttons.map((button, index) => (
                 <Button
                   key={index}
+                  asChild // Hacemos que Button delegue a su hijo
                   variant={button.variant}
                   size="lg"
                   className="text-lg font-semibold px-8 py-6 rounded-xl hover:shadow-md transition-all"
-                  asChild
                 >
-                  <a href={button.href}>
+                  {/* Aquí usamos Link en lugar de <a> para navegación SPA */}
+                  <Link href={button.href} className="flex items-center">
                     {button.icon}
                     {button.text}
-                  </a>
+                    {button.iconRight}
+                  </Link>
                 </Button>
               ))}
             </div>
