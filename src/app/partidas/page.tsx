@@ -1,4 +1,4 @@
-// app/partidas/page.tsx
+//app/partidas/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
