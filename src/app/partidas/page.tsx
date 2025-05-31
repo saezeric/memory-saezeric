@@ -177,7 +177,10 @@ export default function PartidasPage() {
     return null;
   }
 
-  // Agrupar si admin
+  // Para “Mis Partidas”, filtrar únicamente por user_id === user.id
+  const filteredMyGames = myGames.filter((g) => g.user_id === user!.id);
+
+  // Agrupar si admin (para pestaña “all”)
   const grouped: Record<string, MyGame[]> = {};
   if (isAdmin) {
     myGames.forEach((g) => {
@@ -230,11 +233,11 @@ export default function PartidasPage() {
         <section>
           {loadingMy ? (
             <p>Cargando tus partidas...</p>
-          ) : myGames.length === 0 ? (
+          ) : filteredMyGames.length === 0 ? (
             <p>No tienes partidas guardadas.</p>
           ) : (
             <ul className="space-y-4">
-              {myGames.map((g) => (
+              {filteredMyGames.map((g) => (
                 <li
                   key={g.id}
                   className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white dark:bg-gray-800 p-4 rounded shadow"
