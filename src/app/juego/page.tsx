@@ -14,13 +14,18 @@ import { useAuth } from "@/context/AuthContext";
 export default function Juego() {
   const router = useRouter();
   const { user } = useAuth();
-  const API_BASE = "https://m7-laravel-saezeric-production.up.railway.app/api";
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Si no hay usuario, redirigir
+  // Esperar a que termine de cargar auth y redirigir si no hay usuario
   useEffect(() => {
-    if (!user) router.push("/login");
+    if (user === undefined) return;
+    setAuthChecked(true);
+    if (user === null) {
+      router.push("/login");
+    }
   }, [user, router]);
 
+  const API_BASE = "https://m7-laravel-saezeric-production.up.railway.app/api";
   const NUM_CARDS = 6;
   const INITIAL_TIME = 20;
 
@@ -112,7 +117,7 @@ export default function Juego() {
     } finally {
       setLoading(false);
     }
-  }, [NUM_CARDS]);
+  }, []);
 
   // Crea partida en backend
   const createGame = useCallback(async () => {
@@ -132,7 +137,7 @@ export default function Juego() {
     } catch (err) {
       console.error("No se pudo crear la partida:", err);
     }
-  }, [API_BASE]);
+  }, []);
 
   // Finaliza partida
   const finishGame = useCallback(async () => {
@@ -157,9 +162,8 @@ export default function Juego() {
     } catch (err) {
       console.error("Error finalizando partida:", err);
     }
-  }, [API_BASE, gameId, score, totalClicks, finished]);
+  }, [gameId, score, totalClicks, finished]);
 
-  // Lógica de turno
   const resetTurn = () => {
     setFirstCard(null);
     setSecondCard(null);
@@ -239,17 +243,18 @@ export default function Juego() {
     }
   }, [started, score, timeLeft, finishGame]);
 
-  // Reiniciar completa
   const resetGame = () => {
     setScore(0);
     setTimeLeft(INITIAL_TIME);
     resetTotal();
     setFinished(false);
-    // Vuelve a preguntar para empezar
     setStarted(false);
   };
 
-  // Render:
+  // No renderizar nada hasta que authChecked
+  if (!authChecked || user === undefined) {
+    return null;
+  }
 
   // Pantalla de inicio
   if (!started) {

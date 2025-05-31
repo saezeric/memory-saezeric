@@ -1,4 +1,3 @@
-//app/partidas/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -19,7 +18,6 @@ interface MyGame {
   points: number;
   duration: number | null;
   created_at: string;
-  user?: { id: number; name: string };
 }
 
 interface RankingEntry {
@@ -30,68 +28,98 @@ interface RankingEntry {
   user: { id: number; name: string; created_at: string };
 }
 
+interface User {
+  id: number;
+  name: string;
+}
+
 const API_BASE = "https://m7-laravel-saezeric-production.up.railway.app/api";
 
 export default function PartidasPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Protege ruta
+  // Sólo redirigir si sabemos que no hay usuario
   useEffect(() => {
+    if (user === undefined) return; // aún cargando
+    setAuthChecked(true);
     if (user === null) router.push("/login");
   }, [user, router]);
 
-  const [myGames, setMyGames] = useState<MyGame[]>([]);
-  const [ranking, setRanking] = useState<RankingEntry[]>([]);
-  const [loadingMy, setLoadingMy] = useState(true);
-  const [loadingRank, setLoadingRank] = useState(true);
+  const isAdmin = user?.role === "admin";
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  // pestaña activa: 'my' | 'all' | 'ranking'
+  const [myGames, setMyGames] = useState<MyGame[]>([]);
+  const [ranking, setRanking] = useState<RankingEntry[]>([]);
+  const [usersMap, setUsersMap] = useState<Record<number, string>>({});
+  const [loadingMy, setLoadingMy] = useState(true);
+  const [loadingRank, setLoadingRank] = useState(true);
+
   const [tab, setTab] = useState<"my" | "all" | "ranking">("my");
 
-  // edición
-  const [editingGame, setEditingGame] = useState<MyGame | null>(null);
+  // Edición modal
+  const [editing, setEditing] = useState<MyGame | null>(null);
   const [editClicks, setEditClicks] = useState("");
   const [editPoints, setEditPoints] = useState("");
   const [editDuration, setEditDuration] = useState("");
 
-  // parse ISO sin microsegundos
   const parseISO = (iso?: string) => {
     if (typeof iso !== "string") return new Date("");
     const [base] = iso.split(".");
     return new Date(base + "Z");
   };
 
-  // Carga partidas propias y de todos (admin)
+  // Fetch de mis partidas (o todas si admin)
   useEffect(() => {
-    if (!token) return setLoadingMy(false);
+    if (!authChecked || !token) {
+      setLoadingMy(false);
+      return;
+    }
     setLoadingMy(true);
     fetch(`${API_BASE}/games`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(async (res) => {
-        if (!res.ok) throw new Error("No autorizado");
-        return res.json();
+      .then((r) => r.json())
+      .then((json) => {
+        setMyGames(json.data);
       })
-      .then((json) => setMyGames(json.data as MyGame[]))
       .catch(console.error)
       .finally(() => setLoadingMy(false));
-  }, [token]);
+  }, [authChecked, token]);
 
-  // Carga ranking
+  // Fetch ranking
   useEffect(() => {
+    if (!authChecked) return;
     setLoadingRank(true);
     fetch(`${API_BASE}/ranking`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
-      .then((res) => res.json())
-      .then((json) => setRanking(json.data as RankingEntry[]))
+      .then((r) => r.json())
+      .then((json) => setRanking(json.data))
       .catch(console.error)
       .finally(() => setLoadingRank(false));
-  }, [token]);
+  }, [authChecked, token]);
 
+  // Fetch usuarios solo si admin
+  useEffect(() => {
+    if (!authChecked || !isAdmin || !token) return;
+    fetch(`${API_BASE}/users`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((json) => {
+        const map: Record<number, string> = {};
+        json.data.forEach((u: User) => {
+          map[u.id] = u.name;
+        });
+        setUsersMap(map);
+      })
+      .catch(console.error);
+  }, [authChecked, isAdmin, token]);
+
+  // Eliminar partida
   const handleDelete = async (id: number) => {
     if (!confirm("¿Seguro que quieres eliminar esta partida?")) return;
     await fetch(`${API_BASE}/games/${id}`, {
@@ -101,21 +129,23 @@ export default function PartidasPage() {
     setMyGames((prev) => prev.filter((g) => g.id !== id));
   };
 
-  const openEdit = (game: MyGame) => {
-    setEditingGame(game);
-    setEditClicks(String(game.clicks));
-    setEditPoints(String(game.points));
-    setEditDuration(game.duration !== null ? String(game.duration) : "");
+  // Abrir modal de edición
+  const openEdit = (g: MyGame) => {
+    setEditing(g);
+    setEditClicks(String(g.clicks));
+    setEditPoints(String(g.points));
+    setEditDuration(g.duration != null ? String(g.duration) : "");
   };
 
+  // Guardar edición
   const saveEdit = async () => {
-    if (!editingGame) return;
+    if (!editing) return;
     const body = {
       clicks: Number(editClicks),
       points: Number(editPoints),
       duration: editDuration === "" ? null : Number(editDuration),
     };
-    const res = await fetch(`${API_BASE}/games/${editingGame.id}/finish`, {
+    const res = await fetch(`${API_BASE}/games/${editing.id}/finish`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -127,10 +157,9 @@ export default function PartidasPage() {
       alert("Error actualizando partida");
       return;
     }
-    // refresca en local
     setMyGames((prev) =>
       prev.map((g) =>
-        g.id === editingGame.id
+        g.id === editing.id
           ? {
               ...g,
               clicks: body.clicks,
@@ -140,19 +169,21 @@ export default function PartidasPage() {
           : g
       )
     );
-    setEditingGame(null);
+    setEditing(null);
   };
 
-  if (user === null) return null;
-  const isAdmin = user.role === "admin";
+  if (user === undefined || !authChecked) {
+    // esperando auth
+    return null;
+  }
 
-  // agrupa por usuario si admin
-  const groupedByUser: Record<string, MyGame[]> = {};
+  // Agrupar si admin
+  const grouped: Record<string, MyGame[]> = {};
   if (isAdmin) {
     myGames.forEach((g) => {
-      const name = g.user?.name || `Usuario ${g.user_id}`;
-      groupedByUser[name] = groupedByUser[name] || [];
-      groupedByUser[name].push(g);
+      const name = usersMap[g.user_id] ?? `Usuario ${g.user_id}`;
+      if (!grouped[name]) grouped[name] = [];
+      grouped[name].push(g);
     });
   }
 
@@ -194,7 +225,7 @@ export default function PartidasPage() {
         </button>
       </div>
 
-      {/* Pestaña Mis Partidas */}
+      {/* My tab */}
       {tab === "my" && (
         <section>
           {loadingMy ? (
@@ -203,37 +234,37 @@ export default function PartidasPage() {
             <p>No tienes partidas guardadas.</p>
           ) : (
             <ul className="space-y-4">
-              {myGames.map((game) => (
+              {myGames.map((g) => (
                 <li
-                  key={game.id}
+                  key={g.id}
                   className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white dark:bg-gray-800 p-4 rounded shadow"
                 >
                   <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 w-full sm:w-auto">
                     <div className="flex items-center gap-1 text-blue-600">
                       <TrophyIcon className="w-5 h-5" />
-                      <span>{game.points}</span>
+                      <span>{g.points}</span>
                     </div>
                     <div className="flex items-center gap-1 text-purple-600">
                       <ClockIcon className="w-5 h-5" />
-                      <span>{game.duration ?? "-"}s</span>
+                      <span>{g.duration ?? "-"}s</span>
                     </div>
                     <div className="flex items-center gap-1 text-green-600">
                       <ZapIcon className="w-5 h-5" />
-                      <span>{game.clicks}</span>
+                      <span>{g.clicks}</span>
                     </div>
                     <div className="text-gray-500 text-sm">
-                      {parseISO(game.created_at).toLocaleString()}
+                      {parseISO(g.created_at).toLocaleString()}
                     </div>
                   </div>
                   <div className="mt-2 sm:mt-0 flex gap-2">
                     <button
-                      onClick={() => openEdit(game)}
+                      onClick={() => openEdit(g)}
                       className="text-blue-500 hover:text-blue-700"
                     >
                       <Edit2Icon className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => handleDelete(game.id)}
+                      onClick={() => handleDelete(g.id)}
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2Icon className="w-5 h-5" />
@@ -246,44 +277,44 @@ export default function PartidasPage() {
         </section>
       )}
 
-      {/* Pestaña Todas las Partidas (solo admin) */}
+      {/* All tab */}
       {tab === "all" && isAdmin && (
         <section>
-          {Object.entries(groupedByUser).map(([playerName, games]) => (
-            <div key={playerName} className="mb-6">
-              <h3 className="text-xl font-semibold mb-2">{playerName}</h3>
+          {Object.entries(grouped).map(([player, list]) => (
+            <div key={player} className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">{player}</h3>
               <ul className="space-y-4">
-                {games.map((game) => (
+                {list.map((g) => (
                   <li
-                    key={game.id}
+                    key={g.id}
                     className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white dark:bg-gray-800 p-4 rounded shadow"
                   >
                     <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 w-full sm:w-auto">
                       <div className="flex items-center gap-1 text-blue-600">
                         <TrophyIcon className="w-5 h-5" />
-                        <span>{game.points}</span>
+                        <span>{g.points}</span>
                       </div>
                       <div className="flex items-center gap-1 text-purple-600">
                         <ClockIcon className="w-5 h-5" />
-                        <span>{game.duration ?? "-"}s</span>
+                        <span>{g.duration ?? "-"}s</span>
                       </div>
                       <div className="flex items-center gap-1 text-green-600">
                         <ZapIcon className="w-5 h-5" />
-                        <span>{game.clicks}</span>
+                        <span>{g.clicks}</span>
                       </div>
                       <div className="text-gray-500 text-sm">
-                        {parseISO(game.created_at).toLocaleString()}
+                        {parseISO(g.created_at).toLocaleString()}
                       </div>
                     </div>
                     <div className="mt-2 sm:mt-0 flex gap-2">
                       <button
-                        onClick={() => openEdit(game)}
+                        onClick={() => openEdit(g)}
                         className="text-blue-500 hover:text-blue-700"
                       >
                         <Edit2Icon className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => handleDelete(game.id)}
+                        onClick={() => handleDelete(g.id)}
                         className="text-red-500 hover:text-red-700"
                       >
                         <Trash2Icon className="w-5 h-5" />
@@ -297,7 +328,7 @@ export default function PartidasPage() {
         </section>
       )}
 
-      {/* Pestaña Ranking Global */}
+      {/* Ranking tab */}
       {tab === "ranking" && (
         <section>
           <h2 className="text-2xl font-bold mb-4">Ranking Global</h2>
@@ -307,28 +338,28 @@ export default function PartidasPage() {
             <p>No hay datos de ranking.</p>
           ) : (
             <ul className="space-y-4">
-              {ranking.map((entry, idx) => (
+              {ranking.map((e, i) => (
                 <li
-                  key={`${entry.user_id}-${idx}`}
+                  key={`${e.user_id}-${i}`}
                   className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white dark:bg-gray-800 p-4 rounded shadow"
                 >
                   <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 w-full sm:w-auto">
-                    <span className="font-semibold">#{idx + 1}</span>
-                    <span className="font-medium">{entry.user.name}</span>
+                    <span className="font-semibold">#{i + 1}</span>
+                    <span className="font-medium">{e.user.name}</span>
                     <div className="flex items-center gap-1 text-blue-600">
                       <TrophyIcon className="w-5 h-5" />
-                      <span>{entry.max_points}</span>
+                      <span>{e.max_points}</span>
                     </div>
                     <div className="flex items-center gap-1 text-purple-600">
                       <ClockIcon className="w-5 h-5" />
-                      <span>{entry.best_time}s</span>
+                      <span>{e.best_time}s</span>
                     </div>
                     <div className="flex items-center gap-1 text-green-600">
                       <ZapIcon className="w-5 h-5" />
-                      <span>{entry.min_clicks}</span>
+                      <span>{e.min_clicks}</span>
                     </div>
                     <div className="text-gray-500 text-sm">
-                      {parseISO(entry.user.created_at).toLocaleDateString()}
+                      {parseISO(e.user.created_at).toLocaleDateString()}
                     </div>
                   </div>
                 </li>
@@ -339,11 +370,11 @@ export default function PartidasPage() {
       )}
 
       {/* Modal edición */}
-      {editingGame && (
+      {editing && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">
-              Editar Partida #{editingGame.id}
+              Editar Partida #{editing.id}
             </h3>
             <div className="space-y-4">
               <div>
@@ -376,7 +407,7 @@ export default function PartidasPage() {
             </div>
             <div className="mt-6 flex justify-end gap-4">
               <button
-                onClick={() => setEditingGame(null)}
+                onClick={() => setEditing(null)}
                 className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded hover:bg-gray-400 transition"
               >
                 Cancelar

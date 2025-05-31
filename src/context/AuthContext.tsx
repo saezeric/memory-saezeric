@@ -13,11 +13,11 @@ interface User {
   id: number;
   name: string;
   email: string;
-  role: string;
+  role: "user" | "admin";
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: User | null | undefined; // undefined = cargando, null = no auth, User = auth
   register: (name: string, email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -28,29 +28,35 @@ const API_BASE = "https://m7-laravel-saezeric-production.up.railway.app/api";
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null | undefined>(undefined);
 
-  // Al montar, si hay token, recupera usuario
+  // 1) Al montar, recupera token y llama a /me
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    fetch(`${API_BASE}/me`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(async (res) => {
+    const initAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setUser(null);
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/me`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (!res.ok) throw new Error("No autorizado");
         const json = await res.json();
         setUser(json.data);
-      })
-      .catch(() => {
+      } catch {
         localStorage.removeItem("token");
         setUser(null);
-      });
+      }
+    };
+    initAuth();
   }, []);
 
+  // 2) Registro → sólo crea cuentas y redirige al login
   const register = async (name: string, email: string, password: string) => {
     const res = await fetch(`${API_BASE}/register`, {
       method: "POST",
@@ -67,9 +73,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const err = await res.json();
       throw new Error(err.message || "Error al registrar usuario");
     }
-    // No guardamos token ni seteamos user: redirigiremos al login
+    // No auto-login: rediriges desde el componente de página a /login
   };
 
+  // 3) Login → guarda token, obtiene /me y setea user
   const login = async (email: string, password: string) => {
     const res = await fetch(`${API_BASE}/login`, {
       method: "POST",
@@ -82,7 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     const json = await res.json();
     localStorage.setItem("token", json.token);
-    // Obtener datos de usuario
+    // Obtener datos de usuario justo tras el login:
     const meRes = await fetch(`${API_BASE}/me`, {
       headers: { Authorization: `Bearer ${json.token}` },
     });
@@ -91,6 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(meJson.data);
   };
 
+  // 4) Logout → llama logout API, limpia token y user
   const logout = async () => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -112,6 +120,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth debe usarse dentro de AuthProvider");
+  if (ctx === undefined) {
+    throw new Error("useAuth debe usarse dentro de AuthProvider");
+  }
   return ctx;
 };
