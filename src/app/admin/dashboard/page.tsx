@@ -1,18 +1,50 @@
 // src/app/admin/dashboard/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import UsersManagement from "../users/page";
 import GamesManagement from "../games/page";
 import CardsManagement from "../cards/page";
 import CategoriesManagement from "../categories/page";
 
 export default function AdminDashboard() {
-  // Vista activa: 'users' | 'games' | 'cards' | 'categories'
+  const router = useRouter();
+  const { user } = useAuth();
   const [view, setView] = useState<"users" | "games" | "cards" | "categories">(
     "users"
   );
 
+  // 1) Esperamos a que “user” se resuelva (undefined → null/objeto)
+  //    para actuar. Si no hay usuario, redirigimos a /login.
+  //    Si hay usuario pero su rol no es “admin”, mostramos aviso.
+  const [authChecked, setAuthChecked] = useState(false);
+  useEffect(() => {
+    if (user === undefined) return; // todavía cargando
+    setAuthChecked(true);
+    if (user === null) {
+      router.push("/login");
+    }
+  }, [user, router]);
+
+  // Si ya sabemos que hay usuario pero no es admin, no permitimos acceder
+  if (authChecked && user !== null && user.role !== "admin") {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <p className="text-xl text-red-600">
+          No estás autorizado para ver esta página.
+        </p>
+      </div>
+    );
+  }
+
+  // Mientras “user” está undefined (cargando), no renderizamos nada
+  if (!authChecked || user === undefined) {
+    return null;
+  }
+
+  // Si llegamos aquí, user existe y es admin
   const tabs = [
     { key: "users", label: "Usuarios" },
     { key: "games", label: "Partidas" },
@@ -29,8 +61,7 @@ export default function AdminDashboard() {
             key={t.key}
             onClick={() => setView(t.key)}
             className={`
-              flex-1 min-w-0 text-center
-              text-sm px-2 py-1 rounded
+              flex-1 min-w-0 text-center text-sm px-2 py-1 rounded
               ${
                 view === t.key
                   ? "bg-blue-600 text-white"
