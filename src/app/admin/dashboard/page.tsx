@@ -29,7 +29,12 @@ export default function AdminDashboard() {
   }, [user, router]);
 
   // Si ya sabemos que hay usuario pero no es admin, no permitimos acceder
-  if (authChecked && user !== null && user.role !== "admin") {
+  if (
+    authChecked &&
+    user !== undefined &&
+    user !== null &&
+    user.role !== "admin"
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <p className="text-xl text-red-600">
