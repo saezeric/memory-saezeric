@@ -14,8 +14,14 @@ import { useAuth } from "@/context/AuthContext";
 export function Header() {
   const { user, logout } = useAuth();
 
+  // Mientras user===undefined, estamos “cargando” la sesión:
+  if (user === undefined) {
+    return null;
+  }
+
   return (
     <Menubar>
+      {/* Enlaces públicos */}
       <MenubarMenu>
         <MenubarTrigger>
           <Link href="/home">Home</Link>
@@ -32,6 +38,7 @@ export function Header() {
         </MenubarTrigger>
       </MenubarMenu>
 
+      {/* Si no hay user, muestro Login y Registrarse */}
       {!user && (
         <>
           <MenubarMenu>
@@ -47,10 +54,17 @@ export function Header() {
         </>
       )}
 
+      {/* Si hay user, muestro un único menú con su nombre */}
       {user && (
         <MenubarMenu>
           <MenubarTrigger>{user.name}</MenubarTrigger>
           <MenubarContent>
+            {/* Opción de Panel Admin solo para admin */}
+            {user.role === "admin" && (
+              <MenubarItem asChild>
+                <Link href="/admin/dashboard">Panel Admin</Link>
+              </MenubarItem>
+            )}
             <MenubarItem onSelect={logout}>Cerrar sesión</MenubarItem>
           </MenubarContent>
         </MenubarMenu>
