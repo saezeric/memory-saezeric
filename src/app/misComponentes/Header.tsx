@@ -14,7 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 export function Header() {
   const { user, logout } = useAuth();
 
-  // Mientras user===undefined, estamos “cargando” la sesión:
+  // Mientras user === undefined, estamos cargando la sesión
   if (user === undefined) {
     return null;
   }
@@ -63,6 +63,12 @@ export function Header() {
             {user.role === "admin" && (
               <MenubarItem asChild>
                 <Link href="/admin/dashboard">Panel Admin</Link>
+              </MenubarItem>
+            )}
+            {/* Opción de Panel Usuario solo para rol “user” */}
+            {user.role === "user" && (
+              <MenubarItem asChild>
+                <Link href="/user/dashboard">Mi Panel</Link>
               </MenubarItem>
             )}
             <MenubarItem onSelect={logout}>Cerrar sesión</MenubarItem>
